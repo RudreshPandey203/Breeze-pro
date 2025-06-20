@@ -2,7 +2,7 @@
 
 Breeze Pro is a multi-agent AI-powered project builder that lets you describe your idea, see it coded live in a sandbox, iterate through AI suggestions or your own edits, and deploy instantly — all in one interface.
 
-![Breeze Pro Demo](./Screenshot%202025-06-21%20at%201.52.59%20AM.png)
+![Breeze Pro Demo](./assets/demo.png)
 
 ## ✨ Features
 
@@ -62,7 +62,7 @@ npm run dev
 
 4. Hit **Deploy**, and you're done! 🎯
 
-![Live Code Sandbox](./Screenshot%202025-06-21%20at%201.52.18%20AM.png)
+![Live Code Sandbox](./assets/sandbox.png)
 
 ---
 
@@ -83,7 +83,7 @@ Breeze Pro uses Vercel for seamless one-click deployment. Just click **Deploy**,
 
 ## 📸 UI Overview
 
-![Start New Project](./Screenshot%202025-06-21%20at%201.49.14%20AM.png)
+![Start New Project](./assets/start.png)
 
 ---
 
