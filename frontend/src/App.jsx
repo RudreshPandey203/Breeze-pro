@@ -29,6 +29,35 @@ const CodeSandbox = () => {
     }
   };
 
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !projectDir) return;
+
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('project_dir', projectDir);
+
+    try {
+      const response = await fetch('http://localhost:8000/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const result = await response.json();
+      if (!response.ok) throw new Error('Upload failed');
+      
+      const imgTag = `\n<img src="${result.path}" alt="${file.name.replace(/\.[^/.]+$/, "")}" class="uploaded-image">`;
+      setCode(prev => prev + imgTag);
+    } catch (error) {
+      showStatus('error');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleCreateProject = async () => {
     try {
       showStatus('generating', 0);
@@ -119,7 +148,7 @@ const CodeSandbox = () => {
       <nav className="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
         <h1 className="text-xl font-bold flex items-center gap-3">
           <FiCode className="text-blue-400" />
-          Breeze <p className='text-sm italic'>pro</p>
+          Breeze<p className='text-sm italic relative top-0.5 right-2'>pro</p>
         </h1>
         {deploymentUrl && (
           <div className="flex items-center gap-3 bg-gray-800/50 rounded-lg px-4 py-2">

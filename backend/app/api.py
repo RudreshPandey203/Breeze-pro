@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
@@ -9,6 +9,26 @@ from openai import AzureOpenAI
 from datetime import datetime
 import time
 import logging
+import shutil
+
+load_dotenv()
+app = FastAPI()
+logging.basicConfig(level=logging.INFO)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+client = AzureOpenAI(
+    api_key=os.getenv("AZURE_OPENAI_KEY"),
+    api_version="2024-05-01-preview",
+    azure_endpoint=os.getenv("AZURE_ENDPOINT")
+)
+
+# ... (Keep previous BaseModel definitions)
 
 # Configuration
 load_dotenv()
@@ -75,6 +95,9 @@ FIXER_INSTRUCTIONS = """Correct identified issues while:
 2. Maintaining code style consistency
 3. Adding documentation comments
 4. Implementing fallbacks for unsupported features"""
+
+class ImageUploadRequest(BaseModel):
+    project_dir: str
 
 def process_ai_response(response: str):
     try:
@@ -219,15 +242,38 @@ async def update_project(request: UpdateRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/upload-image")
+async def upload_image(
+    project_dir: str,
+    file: UploadFile = File(...)
+):
+    try:
+        project_path = os.path.join("projects", project_dir)
+        assets_path = os.path.join(project_path, "assets")
+        os.makedirs(assets_path, exist_ok=True)
+        
+        file_path = os.path.join(assets_path, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        return {"filename": file.filename, "path": f"assets/{file.filename}"}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ... (Keep previous endpoints)
 
 @app.post("/deploy")
 async def deploy_project(request: DeployRequest):
     try:
         project_path = os.path.join("projects", request.project_dir)
         
+        # Write code and preserve assets
         with open(os.path.join(project_path, "index.html"), "w") as f:
             f.write(request.code)
 
+        # Deploy entire project directory
         result = subprocess.run(
             ["npx", "vercel", "--yes"],
             cwd=project_path,
@@ -247,6 +293,34 @@ async def deploy_project(request: DeployRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# @app.post("/deploy")
+# async def deploy_project(request: DeployRequest):
+#     try:
+#         project_path = os.path.join("projects", request.project_dir)
+        
+#         with open(os.path.join(project_path, "index.html"), "w") as f:
+#             f.write(request.code)
+
+#         result = subprocess.run(
+#             ["npx", "vercel", "--yes"],
+#             cwd=project_path,
+#             capture_output=True,
+#             text=True
+#         )
+
+#         if result.returncode != 0:
+#             raise Exception(f"Deployment failed: {result.stderr}")
+
+#         url_match = re.search(r'https://.*?\.vercel\.app', result.stdout)
+#         return {
+#             "status": "deployed",
+#             "deployment_url": url_match.group(0) if url_match else None,
+#             "project_dir": request.project_dir
+#         }
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
